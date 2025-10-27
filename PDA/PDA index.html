@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Telemetria - RocketWolf</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+<style>
+body {
+    font-family: "Segoe UI", Arial, sans-serif;
+    background-color: #0d0d0d;
+    color: #f0f0f0;
+    margin: 0;
+    padding: 20px;
+}
+.container {
+    max-width: 1200px;
+    margin: auto;
+    background: #1a1a1a;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(255, 140, 0, 0.2);
+}
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #ff6600;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+.header-text h1 {
+    margin: 0;
+    font-size: 1.8em;
+    color: #ff6600;
+}
+.header-text h2 {
+    margin: 0;
+    font-size: 1.2em;
+    color: #f0f0f0;
+}
+.header-text h3 {
+    margin-top: 4px;
+    color: #bbb;
+    font-weight: normal;
+}
+.header img {
+    width: 110px;
+    height: auto;
+}
+
+.main-data {
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+    background: #111;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 25px;
+    border: 1px solid #ff6600;
+}
+.main-item {
+    flex: 1;
+}
+.main-item h2 {
+    color: #ff6600;
+    margin: 0;
+    font-size: 1.4em;
+}
+.main-item strong {
+    font-size: 1.8em;
+    color: #fff;
+}
+
+.section {
+    margin-top: 20px;
+}
+.section h3 {
+    color: #ff6600;
+    border-bottom: 1px solid #333;
+    padding-bottom: 4px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+.data-display {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+}
+.data-item {
+    background-color: #2a2a2a;
+    border-radius: 5px;
+    padding: 8px 12px;
+    margin: 5px;
+    text-align: center;
+    flex: 1 1 150px;
+    color: #f0f0f0;
+}
+.data-item strong {
+    color: #ff6600;
+}
+
+.buttons {
+    text-align: center;
+    margin: 20px 0;
+}
+button {
+    margin: 5px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+#connectButton { background-color: #28a745; color: white; }
+#connectButton:hover { background-color: #218838; }
+#downloadButton { background-color: #007bff; color: white; }
+#downloadButton:hover { background-color: #0056b3; }
+#mapsButton { background-color: #ffc107; color: black; }
+#mapsButton:hover { background-color: #e0a800; }
+
+.chart-container {
+    width: 100%;
+    height: 400px;
+    margin-top: 20px;
+    background-color: #111;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.footer {
+    margin-top: 40px;
+    text-align: center;
+    padding-top: 10px;
+    border-top: 1px solid #333;
+}
+.footer img {
+    width: 160px;
+    height: auto;
+    opacity: 0.9;
+    transition: opacity 0.3s;
+}
+.footer img:hover {
+    opacity: 1;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="header-text">
+            <h1>RocketWolf</h1>
+            <h2>Mission 44 - Helder II</h2>
+            <h3>Dados de Voo</h3>
+        </div>
+        <img src="rocketwolf.jpg" alt="RocketWolf Logo">
+    </div>
+
+    <div class="buttons">
+        <button id="connectButton">Conectar à Porta Serial</button>
+        <button id="downloadButton" disabled>Baixar Lista.txt</button>
+        <button id="mapsButton" disabled>Ver no Google Maps</button>
+    </div>
+
+    <!-- Principais dados -->
+    <div class="main-data">
+        <div class="main-item">
+            <h2>Altitude</h2>
+            <strong id="altValue">N/A</strong> <span>m</span>
+        </div>
+        <div class="main-item">
+            <h2>Latitude</h2>
+            <strong id="latValue">N/A</strong>
+        </div>
+        <div class="main-item">
+            <h2>Longitude</h2>
+            <strong id="lonValue">N/A</strong>
+        </div>
+    </div>
+
+    <!-- Agrupamentos de dados -->
+    <div class="section">
+        <h3>Temperaturas</h3>
+        <div class="data-display" id="tempGroup">
+            <div class="data-item">TempMPU: <strong id="TempMPU">N/A</strong></div>
+            <div class="data-item">TempBMP: <strong id="TempBMP">N/A</strong></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Acelerações</h3>
+        <div class="data-display" id="accGroup">
+            <div class="data-item">AccX: <strong id="AccX">N/A</strong></div>
+            <div class="data-item">AccY: <strong id="AccY">N/A</strong></div>
+            <div class="data-item">AccZ: <strong id="AccZ">N/A</strong></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Giroscópio</h3>
+        <div class="data-display" id="gyroGroup">
+            <div class="data-item">GyroX: <strong id="GyroX">N/A</strong></div>
+            <div class="data-item">GyroY: <strong id="GyroY">N/A</strong></div>
+            <div class="data-item">GyroZ: <strong id="GyroZ">N/A</strong></div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Data e Hora</h3>
+        <div class="data-display" id="timeGroup">
+            <div class="data-item">Data: <strong id="Date">N/A</strong></div>
+            <div class="data-item">Hora: <strong id="Time">N/A</strong></div>
+        </div>
+    </div>
+
+    <h3>Gráfico - Altitude</h3>
+    <div class="chart-container"><canvas id="altChart"></canvas></div>
+
+    <h3>Gráfico - Temperaturas</h3>
+    <div class="chart-container"><canvas id="tempChart"></canvas></div>
+
+    <!-- Rodapé com logotipo AESS -->
+    <div class="footer">
+        <img src="aess.jpeg" alt="AESS Logo">
+    </div>
+</div>
+
+<script>
+if (!("serial" in navigator)) {
+    alert("⚠️ Seu navegador não suporta Web Serial API.\nUse Chrome ou Edge e acesse via http://localhost");
+}
+
+let port, reader;
+let keepReading = false;
+let logData = "TempMPU,TempBMP,Alt,AccX,AccY,AccZ,GyroX,GyroY,GyroZ,Lat,Lon,Date,Time,Timestamp\n";
+let lastLat = 0, lastLon = 0;
+
+const altCtx = document.getElementById("altChart").getContext("2d");
+const tempCtx = document.getElementById("tempChart").getContext("2d");
+
+const altChart = new Chart(altCtx, {
+    type: "line",
+    data: { labels: [], datasets: [{ label: "Altitude (m)", data: [], borderColor: "#ff6600", fill: false }] },
+    options: { 
+        animation: false,
+        plugins: { legend: { labels: { color: "#fff" }}},
+        scales: { 
+            x: { title: { display: true, text: "Tempo", color: "#fff" }, ticks: { color: "#aaa" }},
+            y: { title: { display: true, text: "m", color: "#fff" }, ticks: { color: "#aaa" }}
+        }
+    }
+});
+
+const tempChart = new Chart(tempCtx, {
+    type: "line",
+    data: { labels: [], datasets: [
+        { label: "TempMPU (°C)", data: [], borderColor: "#ff3333", fill: false },
+        { label: "TempBMP (°C)", data: [], borderColor: "#33aaff", fill: false }
+    ]},
+    options: { 
+        animation: false,
+        plugins: { legend: { labels: { color: "#fff" }}},
+        scales: { 
+            x: { title: { display: true, text: "Tempo", color: "#fff" }, ticks: { color: "#aaa" }},
+            y: { title: { display: true, text: "°C", color: "#fff" }, ticks: { color: "#aaa" }}
+        }
+    }
+});
+
+async function connectSerial() {
+    try {
+        port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 115200 });
+        keepReading = true;
+        document.getElementById("connectButton").textContent = "Conectado ✅";
+        readLoop();
+    } catch (e) {
+        alert("Erro ao conectar: " + e);
+    }
+}
+
+async function readLoop() {
+    const textDecoder = new TextDecoderStream();
+    const readableStreamClosed = port.readable.pipeTo(textDecoder.writable);
+    reader = textDecoder.readable.getReader();
+    let buffer = "";
+
+    while (keepReading) {
+        try {
+            const { value, done } = await reader.read();
+            if (done) break;
+            if (value) {
+                buffer += value;
+                let lines = buffer.split("\n");
+                buffer = lines.pop();
+                for (const line of lines) processLine(line.trim());
+            }
+        } catch (error) {
+            console.error("Erro leitura serial:", error);
+            break;
+        }
+    }
+
+    reader.releaseLock();
+    await readableStreamClosed.catch(()=>{});
+}
+
+function processLine(line) {
+    if (!line.includes(":")) return;
+    if (line.includes("RocketWolf")) return;
+
+    const parts = line.split(",");
+    const data = {};
+    for (const part of parts) {
+        const [k, v] = part.split(":");
+        if (k && v) data[k.trim()] = parseFloat(v.trim()) || v.trim();
+    }
+
+    // Atualiza dados principais
+    if (data.Alt !== undefined) document.getElementById("altValue").textContent = data.Alt;
+    if (data.Lat !== undefined) document.getElementById("latValue").textContent = data.Lat;
+    if (data.Lon !== undefined) document.getElementById("lonValue").textContent = data.Lon;
+
+    // Atualiza dados secundários
+    for (const key in data) {
+        const el = document.getElementById(key);
+        if (el) el.textContent = data[key];
+    }
+
+    // Atualiza gráficos
+    const time = new Date().toLocaleTimeString();
+    if (data.Alt) {
+        altChart.data.labels.push(time);
+        altChart.data.datasets[0].data.push(data.Alt);
+        if (altChart.data.labels.length > 50) {
+            altChart.data.labels.shift();
+            altChart.data.datasets[0].data.shift();
+        }
+        altChart.update();
+    }
+    if (data.TempMPU && data.TempBMP) {
+        tempChart.data.labels.push(time);
+        tempChart.data.datasets[0].data.push(data.TempMPU);
+        tempChart.data.datasets[1].data.push(data.TempBMP);
+        if (tempChart.data.labels.length > 50) {
+            tempChart.data.labels.shift();
+            tempChart.data.datasets.forEach(d => d.data.shift());
+        }
+        tempChart.update();
+    }
+
+    lastLat = data.Lat || lastLat;
+    lastLon = data.Lon || lastLon;
+    const lineLog = [
+        data.TempMPU, data.TempBMP, data.Alt, data.AccX, data.AccY, data.AccZ,
+        data.GyroX, data.GyroY, data.GyroZ, data.Lat, data.Lon, data.Date, data.Time,
+        time
+    ].join(",") + "\n";
+    logData += lineLog;
+
+    document.getElementById("downloadButton").disabled = false;
+    document.getElementById("mapsButton").disabled = false;
+}
+
+function downloadLog() {
+    const blob = new Blob([logData], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "Lista.txt";
+    a.click();
+}
+
+function openGoogleMaps() {
+    if (!lastLat || !lastLon) {
+        alert("Coordenadas inválidas ou não recebidas ainda!");
+        return;
+    }
+    window.open(`https://www.google.com/maps/search/?api=1&query=${lastLat},${lastLon}`, "_blank");
+}
+
+document.getElementById("connectButton").addEventListener("click", connectSerial);
+document.getElementById("downloadButton").addEventListener("click", downloadLog);
+document.getElementById("mapsButton").addEventListener("click", openGoogleMaps);
+</script>
+</body>
+</html>
